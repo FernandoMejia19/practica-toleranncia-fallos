@@ -40,7 +40,7 @@ spec:
   ports:
     - port: 8000
       targetPort: 8000
-      nodePort: 38003
+      nodePort: 32003
   selector:
     app: notificaciones-service
   type: NodePort

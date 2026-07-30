@@ -48,24 +48,24 @@ Asegúrese de tener instalado en su sistema operativo:
    ```
 
 4. **Desplegar los Manifiestos de Kubernetes:**
-   Aplique la configuración específica para la PC 2 (kubectl usará automáticamente el contexto del perfil recién creado):
+   Aplique la configuración específica para la PC 2:
    ```bash
    kubectl apply -f K8S/pc-distribuido/pc2/
    ```
 
 5. **Exponer los Servicios al Exterior (Para que PC 1 pueda conectarse):**
-   Abra terminales independientes en la PC 2 para mapear y exponer los servicios en todas las interfaces de red (`0.0.0.0`) hacia la red LAN:
+   Abra terminales independientes en la PC 2 para mapear y exponer los servicios en todas las interfaces de red (`0.0.0.0`) hacia la red LAN utilizando los puertos válidos de Kubernetes NodePort (`30000-32767`):
    - **Exponer Servicio de Inventario:**
      ```bash
-     kubectl port-forward --address 0.0.0.0 service/inventario-service 38001:8000
+     kubectl port-forward --address 0.0.0.0 service/inventario-service 32001:8000
      ```
    - **Exponer Servicio de Pagos (En otra terminal):**
      ```bash
-     kubectl port-forward --address 0.0.0.0 service/pagos-service 38002:8000
+     kubectl port-forward --address 0.0.0.0 service/pagos-service 32002:8000
      ```
    - **Exponer Servicio de Notificaciones (En otra terminal):**
      ```bash
-     kubectl port-forward --address 0.0.0.0 service/notificaciones-service 38003:8000
+     kubectl port-forward --address 0.0.0.0 service/notificaciones-service 32003:8000
      ```
 
 ---

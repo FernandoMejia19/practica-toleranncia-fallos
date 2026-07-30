@@ -31,21 +31,21 @@ data:
                 proxy_set_header X-Forwarded-Proto $scheme;
             }
             location /payments {
-                proxy_pass http://100.125.114.25:38002;
+                proxy_pass http://100.125.114.25:32002;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                 proxy_set_header X-Forwarded-Proto $scheme;
             }
             location /notifications {
-                proxy_pass http://100.125.114.25:38003;
+                proxy_pass http://100.125.114.25:32003;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                 proxy_set_header X-Forwarded-Proto $scheme;
             }
             location /inventory {
-                proxy_pass http://100.125.114.25:38001;
+                proxy_pass http://100.125.114.25:32001;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
