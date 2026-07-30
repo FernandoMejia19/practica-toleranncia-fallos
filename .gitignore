@@ -1,0 +1,19 @@
+# Entornos virtuales
+.venv/
+venv/
+
+# Caché de Python
+__pycache__/
+*.pyc
+
+# Variables de entorno
+.env
+
+# Configuración de VS Code
+.vscode/
+practica.md
+chaos_scenarios.md
+frontend.yaml
+.dockerignore
+guion_demo.md
+informe_tecnico.md

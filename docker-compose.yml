@@ -1,0 +1,113 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: fernando192001
+      POSTGRES_DB: sistema-tickets
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres -d sistema-tickets
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - tickethub-network
+
+  reserva-service:
+    build: ./BackEnd/reserva-servicio
+    container_name: reserva-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: sistema-tickets
+      DB_USER: postgres
+      DB_PASSWORD: fernando192001
+      INVENTORY_URL: http://inventario-service:8000
+      PAYMENTS_URL: http://pagos-service:8000
+      PAYMENT_TIMEOUT: "3"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      inventario-service:
+        condition: service_started
+      pagos-service:
+        condition: service_started
+    networks:
+      - tickethub-network
+
+  inventario-service:
+    build: ./BackEnd/inventario-servicio
+    container_name: inventario-service
+    ports:
+      - "8001:8000"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: sistema-tickets
+      DB_USER: postgres
+      DB_PASSWORD: fernando192001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tickethub-network
+
+  pagos-service:
+    build: ./BackEnd/pagos-servicio
+    container_name: pagos-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: sistema-tickets
+      DB_USER: postgres
+      DB_PASSWORD: fernando192001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tickethub-network
+
+  notificaciones-service:
+    build: ./BackEnd/notificaciones-servicio
+    container_name: notificaciones-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: sistema-tickets
+      DB_USER: postgres
+      DB_PASSWORD: fernando192001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tickethub-network
+
+  api-gateway:
+    build: ./gateway
+    container_name: api-gateway
+    ports:
+      - "80:80"
+    volumes:
+      - ./FrontEnd:/usr/share/nginx/html
+    depends_on:
+      - reserva-service
+      - inventario-service
+      - pagos-service
+      - notificaciones-service
+    networks:
+      - tickethub-network
+
+volumes:
+  postgres-data:
+
+networks:
+  tickethub-network:
+    driver: bridge

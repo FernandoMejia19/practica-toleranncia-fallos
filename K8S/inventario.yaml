@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventario-service
+  labels:
+    app: inventario-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: inventario-service
+  template:
+    metadata:
+      labels:
+        app: inventario-service
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - inventario-service
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: inventario-service
+          image: inventario-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: sistema-tickets
+            - name: DB_USER
+              value: postgres
+            - name: DB_PASSWORD
+              value: fernando192001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventario-service
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: inventario-service
+  type: ClusterIP

@@ -1,0 +1,36 @@
+services:
+  inventario-service:
+    build: ./BackEnd/inventario-servicio
+    container_name: inventario-service
+    ports:
+      - "8001:8000"
+    environment:
+      DB_HOST: 100.119.203.121
+      DB_PORT: 5432
+      DB_NAME: sistema-tickets
+      DB_USER: postgres
+      DB_PASSWORD: fernando192001
+
+  pagos-service:
+    build: ./BackEnd/pagos-servicio
+    container_name: pagos-service
+    ports:
+      - "8002:8000"
+    environment:
+      DB_HOST: 100.119.203.121
+      DB_PORT: 5432
+      DB_NAME: sistema-tickets
+      DB_USER: postgres
+      DB_PASSWORD: fernando192001
+
+  notificaciones-service:
+    build: ./BackEnd/notificaciones-servicio
+    container_name: notificaciones-service
+    ports:
+      - "8003:8000"
+    environment:
+      DB_HOST: 100.119.203.121
+      DB_PORT: 5432
+      DB_NAME: sistema-tickets
+      DB_USER: postgres
+      DB_PASSWORD: fernando192001

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketHub - Compra de Boletos</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header simple -->
+    <header class="site-header">
+        <div class="header-container">
+            <span class="logo">TicketsUPS</span>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="main-content">
+        <!-- Listado de Eventos (Grid) -->
+        <section class="events-section">
+            <h1 class="section-title">Eventos Disponibles</h1>
+            <div id="events-grid" class="events-grid">
+                <!-- Se renderiza desde script.js -->
+            </div>
+        </section>
+
+        <!-- Carrito de Compras (Recuadro Fijo) -->
+        <aside class="cart-section">
+            <h2 class="cart-title">Carrito de compras</h2>
+            
+            <!-- Lista de ítems seleccionados -->
+            <div id="cart-items" class="cart-items">
+                <p class="empty-cart-msg">El carrito está vacío.</p>
+            </div>
+
+            <!-- Información del Cliente (Requerida por el Backend) -->
+            <div class="client-info-form">
+                <div class="form-group">
+                    <label for="client-name">Nombre del Cliente</label>
+                    <input type="text" id="client-name" placeholder="Ej. Juan Pérez" required>
+                </div>
+                <div class="form-group">
+                    <label for="client-email">Correo Electrónico</label>
+                    <input type="email" id="client-email" placeholder="Ej. juan@email.com" required>
+                </div>
+            </div>
+
+            <!-- Total y Botón de Checkout -->
+            <div class="cart-summary">
+                <div class="cart-total-row">
+                    <span>Total a pagar</span>
+                    <strong id="cart-total-value">$0.00</strong>
+                </div>
+                <button id="btn-checkout" class="btn-checkout" disabled>Finalizar Compra</button>
+            </div>
+        </aside>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

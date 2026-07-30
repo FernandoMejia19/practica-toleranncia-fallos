@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reserva-service
+  labels:
+    app: reserva-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: reserva-service
+  template:
+    metadata:
+      labels:
+        app: reserva-service
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - reserva-service
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: reserva-service
+          image: reserva-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: sistema-tickets
+            - name: DB_USER
+              value: postgres
+            - name: DB_PASSWORD
+              value: fernando192001
+            - name: INVENTORY_URL
+              value: http://100.125.114.25:38001
+            - name: PAYMENTS_URL
+              value: http://100.125.114.25:38002
+            - name: PAYMENT_TIMEOUT
+              value: "3"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reserva-service
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: reserva-service
+  type: ClusterIP

@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: fernando192001
+      POSTGRES_DB: sistema-tickets
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres -d sistema-tickets
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - tickethub-network
+
+  reserva-service:
+    build: ./BackEnd/reserva-servicio
+    container_name: reserva-service
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: sistema-tickets
+      DB_USER: postgres
+      DB_PASSWORD: fernando192001
+      INVENTORY_URL: http://100.125.114.25:8001
+      PAYMENTS_URL: http://100.125.114.25:8002
+      PAYMENT_TIMEOUT: "3"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tickethub-network
+
+  api-gateway:
+    build: ./gateway
+    container_name: api-gateway
+    ports:
+      - "80:80"
+    volumes:
+      - ./FrontEnd:/usr/share/nginx/html
+      - ./gateway/nginx-pc1.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - reserva-service
+    networks:
+      - tickethub-network
+
+volumes:
+  postgres-data:
+
+networks:
+  tickethub-network:
+    driver: bridge

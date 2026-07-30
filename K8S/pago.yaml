@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pagos-service
+  labels:
+    app: pagos-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pagos-service
+  template:
+    metadata:
+      labels:
+        app: pagos-service
+    spec:
+      containers:
+        - name: pagos-service
+          image: pagos-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: sistema-tickets
+            - name: DB_USER
+              value: postgres
+            - name: DB_PASSWORD
+              value: fernando192001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pagos-service
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: pagos-service
+  type: ClusterIP

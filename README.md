@@ -1,0 +1,133 @@
+# TicketHub - Sistema de Venta de Entradas Resiliente
+
+Este proyecto implementa una arquitectura de microservicios para la venta de boletos de eventos con resiliencia y tolerancia a fallos integrada, preparada para ejecutarse de forma distribuida.
+
+## Estructura del Proyecto
+
+El repositorio está organizado de la siguiente manera:
+- **`BackEnd/`**: Contiene los microservicios desarrollados en FastAPI:
+  - `reserva-servicio` (Core de reservas y resiliencia).
+  - `inventario-servicio` (Gestión de asientos y disponibilidad).
+  - `pagos-servicio` (Simulación de pasarela de pagos con latencia/fallos).
+  - `notificaciones-servicio` (Simulación de servicio SMTP de notificaciones).
+- **`FrontEnd/`**: Interfaz de usuario web interactiva y minimalista en Vanilla HTML, CSS y JS con soporte de degradación elegante en caso de caídas en el backend.
+- **`gateway/`**: API Gateway unificado basado en Nginx que sirve el frontend estático y enruta las llamadas de API a sus servicios correspondientes.
+- **`K8S/`**: Manifiestos YAML de Kubernetes para despliegue distribuido multi-nodo (con reglas de anti-afinidad de pods en servicios críticos).
+- **`database/`**: Scripts de inicialización SQL de la base de datos PostgreSQL.
+
+---
+
+## 1. Despliegue Local con Docker Compose
+
+Para compilar e iniciar todos los servicios rápidamente en tu entorno local:
+
+### Comandos de Despliegue:
+1. **Levantar el entorno completo**:
+   ```bash
+   docker-compose up --build -d
+   ```
+2. **Acceder a la aplicación**:
+   Abre [http://localhost](http://localhost) en tu navegador.
+3. **Detener el entorno**:
+   ```bash
+   docker-compose down -v
+   ```
+
+### Comandos de Verificación (Docker):
+* **Verificar contenedores activos y puertos mapeados**:
+  ```bash
+  docker ps
+  # O alternativamente:
+  docker-compose ps
+  ```
+  *Todos los contenedores (`postgres-db`, `api-gateway`, `reserva-service`, `inventario-service`, `pagos-service`, `notificaciones-service`) deben aparecer en estado `Up`.*
+
+* **Verificar imágenes construidas localmente**:
+  ```bash
+  docker images
+  ```
+
+* **Inspeccionar logs de arranque** (útil para verificar la conexión inicial a PostgreSQL):
+  ```bash
+  docker-compose logs -f
+  # O ver los logs de un servicio en específico (ej. reservas):
+  docker-compose logs -f reserva-service
+  ```
+
+* **Probar conectividad de la API localmente**:
+  ```bash
+  curl http://localhost/reservations
+  ```
+
+---
+
+## 2. Despliegue en Kubernetes (Minikube / clúster local)
+
+Para desplegar la infraestructura de forma distribuida en Kubernetes:
+
+### Comandos de Despliegue:
+
+1. **Configurar el entorno Docker de Minikube**:
+   Permite que el clúster use las imágenes construidas en tu terminal local:
+   - **En Windows (PowerShell)**:
+     ```powershell
+     minikube docker-env | Invoke-Expression
+     ```
+   - **En Linux / macOS (Bash)**:
+     ```bash
+     eval $(minikube docker-env)
+     ```
+
+2. **Construir las imágenes de Docker**:
+   ```bash
+   # Construir servicios de Backend
+   docker build -t reserva-service:latest -f BackEnd/reserva-servicio/Dockerfile BackEnd/reserva-servicio
+   docker build -t inventario-service:latest -f BackEnd/inventario-servicio/Dockerfile BackEnd/inventario-servicio
+   docker build -t pagos-service:latest -f BackEnd/pagos-servicio/Dockerfile BackEnd/pagos-servicio
+   docker build -t notificaciones-service:latest -f BackEnd/notificaciones-servicio/Dockerfile BackEnd/notificaciones-servicio
+
+   # Construir el API Gateway (ejecutar desde la raíz)
+   docker build -t api-gateway:latest -f gateway/Dockerfile .
+   ```
+
+3. **Aplicar manifiestos de Kubernetes**:
+   ```bash
+   kubectl apply -f K8S/
+   ```
+
+### Comandos de Verificación (Kubernetes):
+
+* **Comprobar el estado general de los recursos**:
+  ```bash
+  kubectl get all
+  ```
+
+* **Verificar que todos los Pods estén en estado `Running`**:
+  ```bash
+  kubectl get pods
+  ```
+
+* **Verificar la distribución Multi-Nodo (Resiliencia)**:
+  *Ejecuta este comando para comprobar en qué nodo físico está corriendo cada pod:*
+  ```bash
+  kubectl get pods -o wide
+  ```
+  > [!IMPORTANT]
+  > Verifica que las 2 réplicas de `reserva-service` e `inventario-service` estén asignadas a **nodos distintos** (gracias a la política de `podAntiAffinity` configurada en los manifiestos). Si una réplica está en el `nodo-1`, la otra debe estar en el `nodo-2`.
+
+* **Inspeccionar logs de un Pod en específico**:
+  ```bash
+  # Ver logs en tiempo real mediante el label del servicio:
+  kubectl logs -f -l app=reserva-service
+  
+  # Ver logs de un pod específico:
+  kubectl logs <nombre-del-pod-reservas>
+  ```
+
+* **Obtener la URL de acceso directo (Minikube)**:
+  ```bash
+  minikube service api-gateway --url
+  ```
+
+---
+
