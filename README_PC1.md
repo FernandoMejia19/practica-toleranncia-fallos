@@ -32,30 +32,22 @@ Asegúrese de tener instalado en su sistema operativo:
    minikube start -p ticket-chaos2 --driver=docker
    ```
 
-2. **Configurar el entorno Docker de Minikube (Perfil ticket-chaos2):**
-   Permita que la terminal construya las imágenes directamente dentro del entorno de Minikube usando el perfil del proyecto:
-   - **En Windows (PowerShell):**
-     ```powershell
-     minikube docker-env -p ticket-chaos2 | Invoke-Expression
-     ```
-   - **En Windows (CMD):**
-     ```cmd
-     @FOR /f "tokens=*" %i IN ('minikube -p ticket-chaos2 docker-env') DO @%i
-     ```
-   - **En Linux / macOS (Bash):**
-     ```bash
-     eval $(minikube -p ticket-chaos2 docker-env)
-     ```
-
-3. **Construir Imágenes Locales:**
+2. **Construir Imágenes Locales:**
    Construya las imágenes correspondientes a los servicios de la PC 1:
    ```bash
    docker build -t reserva-service:latest -f BackEnd/reserva-servicio/Dockerfile BackEnd/reserva-servicio
    docker build -t api-gateway:latest -f gateway/Dockerfile .
    ```
 
+3. **Cargar Imágenes en Minikube (Solución a ErrImagePull):**
+   Cargue las imágenes locales de su Docker host directamente dentro del entorno de Minikube:
+   ```bash
+   minikube image load reserva-service:latest -p ticket-chaos2
+   minikube image load api-gateway:latest -p ticket-chaos2
+   ```
+
 4. **Desplegar los Manifiestos de Kubernetes:**
-   Aplique la configuración específica para la PC 1 (asegúrese de que kubectl use el contexto de `ticket-chaos2`, lo cual minikube configura por defecto tras iniciar el perfil):
+   Aplique la configuración específica para la PC 1:
    ```bash
    kubectl apply -f K8S/pc-distribuido/pc1/
    ```
