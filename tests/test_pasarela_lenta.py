@@ -53,8 +53,12 @@ def test_scenario():
     print(" PRUEBA: LA PASARELA LENTA (LATENCIA Y CIRCUIT BREAKER)")
     print("=" * 60)
     print("Asegurese de que todos los servicios esten activos.")
-    print("Presione ENTER para comenzar...")
-    input()
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "--auto":
+        print("[Modo Automatico Activo]")
+    else:
+        print("Presione ENTER para comenzar...")
+        input()
 
     print("\n--- PARTE I: PROBANDO CON TOLERANCIA A FALLOS ---")
     

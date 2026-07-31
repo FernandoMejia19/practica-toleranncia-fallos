@@ -11,8 +11,12 @@ def test_load_balancing():
     print("=" * 60)
     print("Este script realizara 10 peticiones secuenciales al endpoint /server.")
     print("Kubernetes deberia balancear el trafico entre las dos replicas.")
-    print("Presione ENTER para comenzar...")
-    input()
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "--auto":
+        print("[Modo Automatico Activo]")
+    else:
+        print("Presione ENTER para comenzar...")
+        input()
 
     url = f"{gateway}/server"
     pods_seen = {}

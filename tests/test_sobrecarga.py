@@ -46,8 +46,12 @@ def test_scenario():
     print("=" * 60)
     print("Este script enviara 10 peticiones de compra concurrentes.")
     print("Nginx tiene un limite configurado de 5 req/s.")
-    print("Presione ENTER para comenzar...")
-    input()
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "--auto":
+        print("[Modo Automatico Activo]")
+    else:
+        print("Presione ENTER para comenzar...")
+        input()
 
     threads = []
     print("Enviando 10 peticiones concurrentes...")

@@ -56,16 +56,27 @@ def test_scenario():
     print(" PRUEBA: CONDICION DE CARRERA (SOBREVENTA CONCURRENTE)")
     print("=" * 60)
     print("Este script enviara 2 peticiones de compra simultaneas para el ASIENTO 3.")
-    print("Presione ENTER para comenzar...")
-    input()
+    
+    is_auto = len(sys.argv) > 1 and sys.argv[1] == "--auto"
+
+    if is_auto:
+        print("[Modo Automatico Activo]")
+    else:
+        print("Presione ENTER para comenzar...")
+        input()
 
     print("Comprobando estado inicial del Asiento 3...")
     asiento_info = check_seat(3)
     print(f"Estado inicial Asiento 3: {asiento_info.get('estado')}")
+    
     if asiento_info.get("estado") != "DISPONIBLE":
         print("ADVERTENCIA: El Asiento 3 no esta DISPONIBLE. La prueba podria fallar.")
-        print("¿Desea continuar de todos modos? (S/N): ")
-        if input().strip().lower() == "n":
+        if is_auto:
+            continuar = "s"
+        else:
+            print("¿Desea continuar de todos modos? (S/N): ")
+            continuar = input().strip().lower()
+        if continuar == "n":
             return
 
     t1 = threading.Thread(target=send_request, args=("Cliente A", "a@test.com"))

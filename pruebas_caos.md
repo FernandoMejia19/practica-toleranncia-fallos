@@ -1,130 +1,125 @@
-# Guía de Pruebas de Tolerancia a Fallos y Caos (Multi-PC)
+# Guía de Pruebas de Tolerancia a Fallos y Caos (Multi-PC con Minikube)
 
-Esta guía detalla los pasos para realizar el despliegue distribuido en dos computadoras físicas (PC 1 y PC 2) y ejecutar los scripts de prueba de caos desde la consola, tanto para **Docker Compose** como para **Kubernetes**.
-
----
-
-## Información de Red
-- **PC 1 (IP: 100.119.203.121)**: Nodo principal / Servidor A.
-- **PC 2 (IP: 100.125.114.25)**: Nodo secundario / Servidor B.
+Esta guía detalla los pasos para habilitar la exposición de los servicios en red y realizar las pruebas de caos en la arquitectura distribuida utilizando **Minikube** (con el perfil aislado `ticket-chaos2`) y ejecutando los scripts de prueba en la consola (CMD/PowerShell) de la **PC 1**.
 
 ---
 
-## OPCION A: Despliegue y Pruebas en Kubernetes (Clúster Multi-Nodo)
+## 1. Exposición y Habilitación de Puertos (Ejecutar al inicio en cada PC)
 
-En un entorno Kubernetes multi-nodo (donde la PC 1 actúa como plano de control y la PC 2 está unida como nodo de cómputo), Kubernetes gestiona la red interna (overlay) de forma transparente. Las réplicas se comunican usando los nombres de servicio DNS del clúster (e.g., `http://inventario-service:8000`).
+Para conectar los dos clústeres Minikube a través de la red física local, debe ejecutar los siguientes reenvíos de puertos en terminales independientes en cada máquina. Esto habilitará que los servicios sean accesibles en la LAN usando las IPs físicas:
 
-### 1. Despliegue en el Clúster
-1. Asegúrese de que la PC 2 esté unida al clúster de la PC 1 (usando `kubeadm join` o la herramienta del clúster como K3s/MicroK8s).
-2. Construya las imágenes Docker en ambas máquinas (o cárguelas al registro local de Kubernetes):
+### En la PC 1 (IP: 100.119.203.121)
+Abra dos terminales independientes y ejecute:
+1. **Habilitar y Exponer Base de Datos (Postgres):**
    ```bash
-   # En cada PC, construya las imágenes:
-   docker build -t reserva-service:latest -f BackEnd/reserva-servicio/Dockerfile BackEnd/reserva-servicio
-   docker build -t inventario-service:latest -f BackEnd/inventario-servicio/Dockerfile BackEnd/inventario-servicio
-   docker build -t pagos-service:latest -f BackEnd/pagos-servicio/Dockerfile BackEnd/pagos-servicio
-   docker build -t notificaciones-service:latest -f BackEnd/notificaciones-servicio/Dockerfile BackEnd/notificaciones-servicio
-   docker build -t api-gateway:latest -f gateway/Dockerfile .
+   kubectl port-forward --address 0.0.0.0 service/postgres 30432:5432 -p ticket-chaos2
    ```
-3. Desde la **PC 1**, aplique los manifiestos de Kubernetes:
+2. **Habilitar y Exponer el API Gateway:**
    ```bash
-   kubectl apply -f K8S/
+   kubectl port-forward --address 0.0.0.0 service/api-gateway 30080:80 -p ticket-chaos2
    ```
-4. Verifique la distribución de los Pods entre los dos nodos:
+
+### En la PC 2 (IP: 100.125.114.25)
+Abra tres terminales independientes y ejecute:
+1. **Habilitar y Exponer Servicio de Inventario:**
    ```bash
-   kubectl get pods -o wide
+   kubectl port-forward --address 0.0.0.0 service/inventario-service 32001:8000 -p ticket-chaos2
    ```
-   *(Observará que las 2 réplicas de `reserva-service` e `inventario-service` están repartidas entre la PC 1 y la PC 2 debido a las reglas de `podAntiAffinity`).*
-
-### 2. Acceso y Dirección del Gateway
-El API Gateway se expone mediante un servicio tipo `NodePort` en el puerto `30080` (definido en `K8S/gateway.yaml`). Puede acceder a la aplicación desde el navegador de **cualquier PC** escribiendo:
-- `http://100.119.203.121:30080` (o `http://100.125.114.25:30080`)
-
-Para las pruebas desde consola, defina la variable `GATEWAY_URL` apuntando al NodePort en su terminal:
-- **Windows CMD**: `set GATEWAY_URL=http://100.119.203.121:30080`
-- **PowerShell**: `$env:GATEWAY_URL="http://100.119.203.121:30080"`
-
-### 3. Ejecución de Pruebas e Inyección de Caos (Desde PC 1)
-
-#### Escenario 1: El Inventario Fantasma (Caída de Pod)
-- **Inyección de Caos:** Detenga el servicio de inventario en el clúster escalando sus réplicas a 0:
-  ```bash
-  kubectl scale deployment inventario-service --replicas=0
-  ```
-- **Comando de Prueba:** `python tests/test_inventario_fantasma.py`
-- **Monitoreo de Logs:** En otra terminal de la PC 1, observe los reintentos:
-  ```bash
-  kubectl logs -f -l app=reserva-service --tail=20
-  ```
-- **Restauración:**
-  ```bash
-  kubectl scale deployment inventario-service --replicas=2
-  ```
-
-#### Escenario 2: La Pasarela Lenta (Latencia y Circuit Breaker)
-- **Comando de Prueba:** `python tests/test_pasarela_lenta.py`
-- **Monitoreo de Logs:** Observe los logs de reservas para presenciar el disparo del Circuit Breaker (`OPEN`) y la compensación SAGA:
-  ```bash
-  kubectl logs -f -l app=reserva-service --tail=20
-  ```
-
-#### Escenario 3: El Correo Perdido (Notificación fuera de línea)
-- **Inyección de Caos:** Escale a 0 el deployment de notificaciones:
-  ```bash
-  kubectl scale deployment notificaciones-service --replicas=0
-  ```
-- **Comando de Prueba:** `python tests/test_correo_perdido.py`
-- **Restauración:**
-  ```bash
-  kubectl scale deployment notificaciones-service --replicas=1
-  ```
-
-#### Escenario 4: Sobrecarga (El Diluvio de Peticiones)
-- **Comando de Prueba:** `python tests/test_sobrecarga.py`
-- **Verificación:** Nginx (dentro del pod del gateway) rechazará las peticiones excedentes con HTTP 429.
-
-#### Escenario 5: Condición de Carrera
-- **Comando de Prueba:** `python tests/test_condicion_carrera.py`
+2. **Habilitar y Exponer Servicio de Pagos:**
+   ```bash
+   kubectl port-forward --address 0.0.0.0 service/pagos-service 32002:8000 -p ticket-chaos2
+   ```
+3. **Habilitar y Exponer Servicio de Notificaciones:**
+   ```bash
+   kubectl port-forward --address 0.0.0.0 service/notificaciones-service 32003:8000 -p ticket-chaos2
+   ```
 
 ---
 
-## OPCION B: Despliegue y Pruebas en Docker Compose
+## 2. Configuración de la Terminal de Pruebas (En PC 1)
 
-Si no dispone de un clúster Kubernetes configurado en el momento, puede usar la simulación distribuida mediante Docker Compose:
+Antes de iniciar la ejecución de los scripts, abra una terminal (CMD o PowerShell) en la PC 1 en la raíz del proyecto y defina la dirección del Gateway:
+- **Windows CMD**: `set GATEWAY_URL=http://localhost:30080`
+- **PowerShell**: `$env:GATEWAY_URL="http://localhost:30080"`
 
-### 1. Despliegue
+---
 
-#### En la PC 1 (IP: 100.119.203.121)
-```bash
-docker-compose -f docker-compose-pc1.yml up --build -d
-```
+## 3. Secuencia de Pruebas y Simulaciones de Caos
 
-#### En la PC 2 (IP: 100.125.114.25)
-```bash
-docker-compose -f docker-compose-pc2.yml up --build -d
-```
+### Paso 1: Verificar el Balanceo de Tráfico Activo
+Esta prueba demuestra que las solicitudes al Core se distribuyen entre las 2 réplicas que corren en el clúster de la PC 1.
+- **Comando a ejecutar en PC 1:**
+  ```bash
+  python tests/test_balanceo.py --auto
+  ```
+- **Comportamiento Esperado:** El script envía 10 llamadas secuenciales y muestra en pantalla cómo el balanceador de carga interno de Kubernetes alterna y reparte el tráfico entre los dos nombres de pod activos del servicio de reservas.
 
-### 2. Dirección del Gateway
-El gateway se expone en el puerto `80` de la PC 1. Configure en la consola de PC 1:
-- **Windows CMD**: `set GATEWAY_URL=http://localhost`
+---
 
-### 3. Ejecución de Pruebas e Inyección de Caos (Desde PC 1)
+### Paso 2: Simulación de Sobrecarga (El Diluvio de Peticiones)
+Demuestra cómo el Gateway unificado protege al sistema de ráfagas masivas bloqueando el tráfico que supere el límite de 5 req/s.
+- **Comando a ejecutar en PC 1:**
+  ```bash
+  python tests/test_sobrecarga.py --auto
+  ```
+- **Comportamiento Esperado:** Envía 10 solicitudes paralelas concurrentes. Nginx bloquea el tráfico excedente de forma instantánea devolviendo un código **`429 Too Many Requests`**. Las solicitudes que logran pasar a la cola del backend retornan 503 debido a que la PC 2 no está procesando compras en este instante de la prueba.
 
-- **Inventario Fantasma:**
-  - Apagar en PC 2: `docker stop inventario-service`
-  - Ejecutar en PC 1: `python tests/test_inventario_fantasma.py`
-  - Restaurar en PC 2: `docker start inventario-service`
+---
 
-- **Pasarela Lenta:**
-  - Ejecutar en PC 1: `python tests/test_pasarela_lenta.py`
-  - Monitorear logs en PC 1: `docker logs -f reserva-service`
+### Paso 3: Tolerancia a Caídas (El Inventario Fantasma)
+Evalúa cómo el Core mitiga la indisponibilidad temporal del inventario mediante políticas de reintentos exponenciales.
 
-- **Correo Perdido:**
-  - Apagar en PC 2: `docker stop notificaciones-service`
-  - Ejecutar en PC 1: `python tests/test_correo_perdido.py`
-  - Restaurar en PC 2: `docker start notificaciones-service`
+- **Paso A (Inyectar el Fallo):**
+  En la **PC 2**, detenga temporalmente el port-forward de inventario cerrando la terminal que ejecuta el `port-forward` del puerto 32001 (o apague el pod en PC 2 con `kubectl scale deployment inventario-service --replicas=0 -p ticket-chaos2`).
+- **Paso B (Ejecutar Prueba en PC 1):**
+  ```bash
+  python tests/test_inventario_fantasma.py --auto
+  ```
+- **Paso C (Comportamiento Esperado):**
+  1. **Con Tolerancia:** El Core intentará conectarse 3 veces esperando `0.5s`, `1s` y `2s`. Si durante ese tiempo reactiva el servicio, la compra se completará. De lo contrario, reportará un HTTP 503 controlado. Puede observar los logs en PC 1 con:
+     ```bash
+     kubectl logs -f -l app=reserva-service
+     ```
+  2. **Sin Tolerancia:** El sistema falla de inmediato en el primer intento (0s transcurridos), sin reintentar.
+- **Paso D (Restauración):**
+  Restaure el servicio en la **PC 2** (iniciando el port-forward de nuevo o escalando a 2 réplicas).
 
-- **Sobrecarga:**
-  - Ejecutar en PC 1: `python tests/test_sobrecarga.py`
+---
 
-- **Condición de Carrera:**
-  - Ejecutar en PC 1: `python tests/test_condicion_carrera.py`
+### Paso 4: Latencia y Circuit Breaker (La Pasarela Lenta)
+Demuestra cómo los timeouts evitan que las conexiones del servidor queden colgadas y cómo el Circuit Breaker entra en estado OPEN para rechazar tráfico ante fallos recurrentes.
+
+- **Comando a ejecutar en PC 1:**
+  ```bash
+  python tests/test_pasarela_lenta.py --auto
+  ```
+- **Comportamiento Esperado:**
+  1. **Petición 1 y 2 (CB Cerrado):** Se simula una demora de pagos de 15 segundos. Al superar el timeout límite de 3.0s, el Core cancela la transacción, ejecuta la compensación SAGA liberando el asiento retenido en el inventario y devuelve 503.
+  2. **Petición 3 (CB Abierto):** Habiendo acumulado 2 fallos seguidos, el Circuit Breaker de reservas cambia a estado **`OPEN`**. Al enviar una compra normal inmediata, esta se rechaza instantáneamente (milisegundos) con mensaje `"Circuito de Pagos abierto"` sin sobrecargar la red.
+  3. **Petición 4 (CB Recuperado):** El script espera 10 segundos (tiempo de recuperación). Al enviar la compra, el circuito cambia a `HALF-OPEN` y se cierra (`CLOSED`) tras completarse exitosamente (HTTP 200).
+  4. **Petición 5 (Sin Tolerancia):** Se inyecta latencia sin resiliencia. La llamada se queda colgada durante 15 segundos bloqueando los hilos de ejecución. Al fallar, NO se ejecuta compensación, dejando el asiento bloqueado permanentemente en la base de datos (inconsistencia de datos).
+
+---
+
+### Paso 5: Fallo del Correo (El Correo Perdido)
+Verifica que las caídas de servicios secundarios/notificaciones no interrumpan ni impidan la compra de boletos del cliente.
+
+- **Paso A (Inyectar el Fallo):**
+  En la **PC 2**, cierre la terminal del port-forward de notificaciones (puerto 32003) (o scale a 0 replicas en PC 2).
+- **Paso B (Ejecutar Prueba en PC 1):**
+  ```bash
+  python tests/test_correo_perdido.py --auto
+  ```
+- **Paso C (Comportamiento Esperado):** La compra finaliza con éxito en la base de datos (estado `CONFIRMADA` y pago `EXITOSO`). El envío de la notificación falla de forma aislada sin comprometer el flujo crítico del negocio.
+- **Paso D (Restauración):**
+  Restaure la exposición del servicio en la **PC 2**.
+
+---
+
+### Paso 6: Consistencia de Asientos (Condición de Carrera)
+Verifica la consistencia transaccional cuando dos usuarios compran concurrentemente el mismo asiento libre.
+- **Comando a ejecutar en PC 1:**
+  ```bash
+  python tests/test_condicion_carrera.py --auto
+  ```
+- **Comportamiento Esperado:** Envía 2 solicitudes de compra en paralelo para el mismo Asiento 3. Un cliente recibirá éxito (HTTP 200) y el segundo cliente recibirá conflicto (HTTP 409) debido al control de estado transaccional en el inventario.

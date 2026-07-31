@@ -74,8 +74,12 @@ def test_scenario():
     print(" PRUEBA: EL CORREO PERDIDO (NOTIFICACIONES FUERA DE LINEA)")
     print("=" * 60)
     print("Asegurese de que todos los servicios esten activos.")
-    print("Presione ENTER para comenzar...")
-    input()
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "--auto":
+        print("[Modo Automatico Activo]")
+    else:
+        print("Presione ENTER para comenzar...")
+        input()
 
     print("\n--- PASO 1: Creando reserva y procesando pago principal ---")
     status, res = make_reservation(5, "Sofia Diaz", "sofia@test.com", 40.0)

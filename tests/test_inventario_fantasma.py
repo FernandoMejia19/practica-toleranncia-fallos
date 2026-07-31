@@ -44,8 +44,12 @@ def test_scenario():
     print(" PRUEBA: EL INVENTARIO FANTASMA (CAIDA DE INVENTARIO)")
     print("=" * 60)
     print("Asegurese de que el servicio de inventario este APAGADO en la PC 2.")
-    print("Presione ENTER para comenzar...")
-    input()
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "--auto":
+        print("[Modo Automatico Activo]")
+    else:
+        print("Presione ENTER para comenzar...")
+        input()
 
     print("\n--- PASO 1: Ejecutando CON Tolerancia a Fallos (Reintentos) ---")
     status, res, elapsed = make_reservation(2, "Test Retry", "retry@test.com", 35.0, True)
