@@ -97,3 +97,16 @@ Demuestra la consistencia transaccional cuando dos personas intentan comprar el 
   - El otro cliente obtiene conflicto (**`HTTP 409`** - Asiento ya vendido o reservado).
 - **Qué ocurre internamente:** La base de datos ejecuta una consulta atómica de actualización (`UPDATE ... WHERE estado = 'DISPONIBLE'`). El primer hilo de ejecución bloquea la fila y cambia el estado. Cuando el segundo hilo intenta hacer el update, la condición `WHERE` ya no se cumple, retornando 0 filas afectadas y abortando la compra del segundo cliente con seguridad.
 - **Qué significa la respuesta:** Evita el problema de la sobreventa (vender una entrada a dos personas distintas).
+
+### Prueba G: Base de Datos Intermitente (Flapping de Postgres)
+Demuestra la robustez y capacidad de recuperación del sistema completo ante pérdidas y restauraciones intermitentes de la base de datos centralizada.
+- **Comando (en PC 1):**
+  ```bash
+  python tests/test_base_datos_intermitente.py --auto
+  ```
+- **Qué muestra la pantalla:**
+  - Escritura con BD activa: Éxito (HTTP 200/201).
+  - Escritura durante la caída (ciclo): Fallo observable (HTTP 500/503/502).
+  - Escritura tras la recuperación (ciclo): Éxito de nuevo (HTTP 200/201), validando la restauración automática del sistema.
+- **Qué ocurre internamente:** El script interactúa directamente con la API de Kubernetes en el nodo Master (PC 1) reduciendo las réplicas del deployment de PostgreSQL a 0 (simulando una falla de hardware o pérdida total de disco). Los microservicios quedan desconectados de su persistencia. Luego, el script restaura el pod de Postgres a 1 réplica y espera a que el servicio esté completamente listo antes de enviar tráfico exitosamente de nuevo.
+

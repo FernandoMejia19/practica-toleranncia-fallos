@@ -25,6 +25,7 @@ data:
         id_asiento INT NOT NULL,
         cliente VARCHAR(100) NOT NULL,
         correo VARCHAR(100) NOT NULL,
+        monto NUMERIC(8,2) NOT NULL DEFAULT 0.00,
         estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
         fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT fk_asiento FOREIGN KEY(id_asiento) REFERENCES asientos(id_asiento)
@@ -62,10 +63,10 @@ data:
     (2,'B2','DISPONIBLE'),
     (2,'B3','DISPONIBLE');
 
-    INSERT INTO reservas(id_asiento,cliente,correo,estado)
+    INSERT INTO reservas(id_asiento,cliente,correo,monto,estado)
     VALUES
-    (1,'Juan Perez','juan@email.com','CONFIRMADA'),
-    (4,'Maria Lopez','maria@email.com','PENDIENTE');
+    (1,'Juan Perez','juan@email.com',35.00,'CONFIRMADA'),
+    (4,'Maria Lopez','maria@email.com',40.00,'PENDIENTE');
 
     INSERT INTO pagos(id_reserva,monto,estado)
     VALUES

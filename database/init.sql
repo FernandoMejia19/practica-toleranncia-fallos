@@ -27,6 +27,7 @@ CREATE TABLE reservas (
     id_asiento INT NOT NULL,
     cliente VARCHAR(100) NOT NULL,
     correo VARCHAR(100) NOT NULL,
+    monto NUMERIC(8,2) NOT NULL DEFAULT 0.00,
     estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -85,10 +86,10 @@ VALUES
 -- INSERTAR RESERVAS
 -- ===========================================
 
-INSERT INTO reservas(id_asiento,cliente,correo,estado)
+INSERT INTO reservas(id_asiento,cliente,correo,monto,estado)
 VALUES
-(1,'Juan Perez','juan@email.com','CONFIRMADA'),
-(4,'Maria Lopez','maria@email.com','PENDIENTE');
+(1,'Juan Perez','juan@email.com',35.00,'CONFIRMADA'),
+(4,'Maria Lopez','maria@email.com',40.00,'PENDIENTE');
 
 -- ===========================================
 -- INSERTAR PAGOS
@@ -108,7 +109,4 @@ VALUES
 (1,'juan@email.com','ENVIADO'),
 (2,'maria@email.com','PENDIENTE');
 
-
 SELECT * FROM RESERVAS;
-
-

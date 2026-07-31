@@ -123,3 +123,19 @@ Verifica la consistencia transaccional cuando dos usuarios compran concurrenteme
   python tests/test_condicion_carrera.py --auto
   ```
 - **Comportamiento Esperado:** Envía 2 solicitudes de compra en paralelo para el mismo Asiento 3. Un cliente recibirá éxito (HTTP 200) y el segundo cliente recibirá conflicto (HTTP 409) debido al control de estado transaccional en el inventario.
+
+---
+
+### Paso 7: Base de Datos Intermitente (Flapping de Postgres)
+Verifica la respuesta del sistema cuando la base de datos centralizada sufre caídas intermitentes durante operaciones de escritura.
+- **Comando a ejecutar en PC 1:**
+  ```bash
+  python tests/test_base_datos_intermitente.py --auto
+  ```
+- **Comportamiento Esperado:** 
+  1. Realiza una escritura inicial exitosa.
+  2. Apaga (escala a 0) PostgreSQL en el clúster usando `kubectl`.
+  3. Intenta realizar una compra, la cual falla de forma visible (HTTP 500/503) debido a la caída de conectividad de BD.
+  4. Restaura PostgreSQL a 1 réplica y espera que los pods estén listos (`rollout status`).
+  5. Envía una nueva compra, la cual se procesa y finaliza con éxito (HTTP 200), demostrando auto-recuperación sin pérdidas ni corrupción.
+
